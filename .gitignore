@@ -1,0 +1,22 @@
+# Compilação Java
+out/
+out-tests/
+*.class
+
+# Arquivos temporários da apresentação
+.tmp-slides-poo/
+Apresentacao-POO-com-Robo/
+*.inspect.ndjson
+
+# Material pessoal e rascunhos de design
+DOCUMENTACAO.md
+assets/conceitos/
+assets/sprites/robo-sprites.png
+preview-jogo-v2.png
+preview-robo.png
+
+# Sistema e IDE
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
