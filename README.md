@@ -1,6 +1,6 @@
 # Missão Robô: POO com Java
 
-Jogo educacional feito com Java Swing para apresentar Programação Orientada a
+Jogo feito com Java Swing para apresentar Programação Orientada a
 Objetos de forma visual e interativa.
 
 O jogador monta um pequeno método Java usando fitas de comando. Ao executar, o
