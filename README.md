@@ -6,6 +6,9 @@ Objetos de forma visual e interativa.
 O jogador monta um pequeno método Java usando fitas de comando. Ao executar, o
 objeto `robo` percorre o mapa, desvia das paredes e tenta coletar a energia.
 
+O robô reage aos comandos com falas, sons e animações. A missão também pode ser
+jogada com desafios extras e uma pontuação de até três estrelas.
+
 ![Tela do jogo](assets/imagens/jogo.png)
 
 ## Como executar
@@ -26,7 +29,7 @@ java -cp out mostra.Main
 
 ## Como jogar
 
-1. Escolha uma missão.
+1. Escolha uma missão e um desafio.
 2. Clique nas fitas para montar o método `completarMissao()`.
 3. Use **Desfazer** ou **Limpar** para corrigir a sequência.
 4. Clique em **Executar código**.
@@ -34,6 +37,19 @@ java -cp out mostra.Main
 
 As paredes mudam quando o botão **Novo mapa** é usado. Todo mapa sorteado possui
 uma solução que cabe no limite de dez comandos.
+
+## Desafios e estrelas
+
+- **Missão normal:** basta chegar e pegar a energia.
+- **Código curto:** use o menor número possível de comandos.
+- **Poupe bateria:** termine com pelo menos 30% de carga.
+- **Rota alternativa:** passe pela casa marcada com estrela.
+
+Concluir a missão vale pelo menos uma estrela. Cumprir o desafio extra vale
+duas; cumprir o desafio com uma sequência ideal vale três.
+
+O botão de som pode ser ligado ou desligado a qualquer momento. Também existe
+uma pequena sequência secreta escondida entre as fitas.
 
 ## Fitas disponíveis
 
@@ -80,8 +96,12 @@ em 1 para facilitar a leitura.
 ### Paredes aleatórias
 
 Depois de sortear as paredes, `Missao` executa uma busca em largura, conhecida
-como BFS. O mapa só é aceito quando a busca encontra um caminho de até nove
-movimentos. Assim sobra o décimo comando para `robo.pegarItem();`.
+como BFS. O mapa só é aceito quando a busca encontra um caminho de até oito
+movimentos. Assim ainda há espaço para `robo.pegarItem();` e para testar uma
+rota diferente.
+
+Quando o desafio da estrela é selecionado, a mesma busca confere se existe um
+caminho válido que passe pela casa bônus e depois chegue à energia.
 
 ### Animação
 
@@ -93,6 +113,8 @@ movimentos. Assim sobra o décimo comando para `robo.pegarItem();`.
 - animação `idle` enquanto está parado.
 
 Cada casa visitada recebe uma marca azul para mostrar o caminho executado.
+Uma colisão deixa o LED e os olhos vermelhos. Ao vencer, o robô salta e recebe
+uma chuva de confetes.
 
 ## Estrutura do projeto
 
@@ -102,10 +124,13 @@ src/mostra/
 ├── JogoRoboFrame.java   monta a interface e executa os comandos
 ├── PainelMapa.java      desenha o mapa, a trilha e as animações
 ├── Missao.java          cria as missões e sorteia paredes válidas
+├── Desafio.java         define as regras dos desafios extras
 ├── Robo.java            guarda o estado e os métodos do robô
 ├── Posicao.java         representa uma coordenada
 ├── Direcao.java         define os quatro movimentos possíveis
 ├── Comando.java         liga cada fita ao código Java
+├── ReacaoRobo.java      define as expressões do personagem
+├── SomJogo.java         cria efeitos sonoros simples em tempo real
 └── SpriteRobo.java      gera os sprites em pixel art
 ```
 
@@ -117,8 +142,8 @@ No Windows:
 .\run-tests.bat
 ```
 
-Os testes verificam movimentos, consumo de bateria, coleta única e centenas de
-mapas aleatórios.
+Os testes verificam movimentos, consumo de bateria, coleta única, desafios e
+centenas de mapas aleatórios com rotas normal e bônus.
 
 ## Apresentação
 

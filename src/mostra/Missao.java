@@ -10,7 +10,7 @@ import java.util.Random;
 public class Missao {
     static final int COLUNAS = 6;
     static final int LINHAS = 4;
-    static final int MAXIMO_MOVIMENTOS = 9;
+    static final int MAXIMO_MOVIMENTOS = 8;
 
     private final String nome;
     private final String descricao;
@@ -20,6 +20,7 @@ public class Missao {
     private final int quantidadeParedes;
     private final Random sorteio = new Random();
     private List<Posicao> paredes = new ArrayList<>();
+    private Posicao casaBonus;
 
     public Missao(
             String nome,
@@ -71,11 +72,13 @@ public class Missao {
             paredes = new ArrayList<>(casasDisponiveis.subList(0, quantidadeParedes));
             int distancia = calcularMenorCaminho();
             if (distancia >= 0 && distancia <= MAXIMO_MOVIMENTOS) {
+                sortearCasaBonus(casasDisponiveis);
                 return;
             }
         }
 
         paredes = new ArrayList<>();
+        sortearCasaBonus(casasDisponiveis);
     }
 
     public String getNome() {
@@ -88,6 +91,10 @@ public class Missao {
 
     public Posicao getObjetivo() {
         return objetivo;
+    }
+
+    public Posicao getCasaBonus() {
+        return casaBonus;
     }
 
     public String getDica() {
@@ -116,6 +123,50 @@ public class Missao {
     }
 
     public int calcularMenorCaminho() {
+        return calcularDistancia(inicio, objetivo);
+    }
+
+    public int calcularMenorCaminhoViaBonus() {
+        int ateBonus = calcularDistancia(inicio, casaBonus);
+        int bonusAteObjetivo = calcularDistancia(casaBonus, objetivo);
+        return ateBonus + bonusAteObjetivo;
+    }
+
+    private void sortearCasaBonus(List<Posicao> casasDisponiveis) {
+        int menorCaminho = calcularMenorCaminho();
+        List<Posicao> candidatas = new ArrayList<>();
+        List<Posicao> rotasAlternativas = new ArrayList<>();
+
+        for (Posicao posicao : casasDisponiveis) {
+            if (temParede(posicao)) {
+                continue;
+            }
+
+            int ateBonus = calcularDistancia(inicio, posicao);
+            int bonusAteObjetivo = calcularDistancia(posicao, objetivo);
+            if (ateBonus < 0 || bonusAteObjetivo < 0) {
+                continue;
+            }
+
+            int distanciaTotal = ateBonus + bonusAteObjetivo;
+            if (distanciaTotal <= MAXIMO_MOVIMENTOS) {
+                candidatas.add(posicao);
+                if (distanciaTotal > menorCaminho) {
+                    rotasAlternativas.add(posicao);
+                }
+            }
+        }
+
+        List<Posicao> opcoes = rotasAlternativas.isEmpty() ? candidatas : rotasAlternativas;
+        if (opcoes.isEmpty()) {
+            casaBonus = inicio;
+            return;
+        }
+        Collections.shuffle(opcoes, sorteio);
+        casaBonus = opcoes.get(0);
+    }
+
+    private int calcularDistancia(Posicao origem, Posicao destino) {
         int[][] distancias = new int[LINHAS][COLUNAS];
         for (int y = 0; y < LINHAS; y++) {
             for (int x = 0; x < COLUNAS; x++) {
@@ -124,12 +175,12 @@ public class Missao {
         }
 
         Queue<Posicao> fila = new ArrayDeque<>();
-        fila.add(inicio);
-        distancias[inicio.getY()][inicio.getX()] = 0;
+        fila.add(origem);
+        distancias[origem.getY()][origem.getX()] = 0;
 
         while (!fila.isEmpty()) {
             Posicao atual = fila.remove();
-            if (atual.mesmaPosicao(objetivo)) {
+            if (atual.mesmaPosicao(destino)) {
                 return distancias[atual.getY()][atual.getX()];
             }
 

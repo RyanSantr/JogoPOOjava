@@ -37,17 +37,23 @@ public class JogoRoboFrame extends JFrame {
     private final List<Comando> comandosEscolhidos;
     private final List<JButton> botoesEdicao;
     private final JComboBox<String> seletorMissao;
+    private final JComboBox<Desafio> seletorDesafio;
     private final JLabel tituloMissao;
     private final JLabel descricaoMissao;
+    private final JLabel descricaoDesafio;
     private final JLabel statusRobo;
     private final JLabel contadorComandos;
     private final JTextArea areaCodigo;
     private final PainelMapa painelMapa;
+    private final JButton botaoSom;
+    private final SomJogo som;
 
     private Missao missaoAtual;
+    private Desafio desafioAtual;
     private Robo robo;
     private int indiceExecucao;
     private boolean executando;
+    private boolean passouNoBonusAntesDaColeta;
 
     public JogoRoboFrame() {
         super("POO com Java - Missão Robô");
@@ -55,15 +61,20 @@ public class JogoRoboFrame extends JFrame {
         comandosEscolhidos = new ArrayList<>();
         botoesEdicao = new ArrayList<>();
         missaoAtual = missoes.get(0);
+        desafioAtual = Desafio.LIVRE;
         robo = missaoAtual.criarRobo();
+        som = new SomJogo();
 
         seletorMissao = criarSeletorMissao();
+        seletorDesafio = criarSeletorDesafio();
         tituloMissao = criarLabel("", 25, Font.BOLD, PRETO);
         descricaoMissao = criarLabel("", 15, Font.PLAIN, CINZA);
+        descricaoDesafio = criarLabel("", 13, Font.BOLD, AZUL);
         statusRobo = criarLabel("", 14, Font.BOLD, PRETO);
         contadorComandos = criarLabel("", 13, Font.PLAIN, CINZA);
         areaCodigo = criarAreaCodigo();
         painelMapa = new PainelMapa(missaoAtual, robo);
+        botaoSom = criarBotaoSecundario("Som: ligado", this::alternarSom);
 
         configurarJanela();
         montarTela();
@@ -104,19 +115,34 @@ public class JogoRoboFrame extends JFrame {
         textos.add(tituloMissao);
         textos.add(Box.createVerticalStrut(4));
         textos.add(descricaoMissao);
-        textos.add(Box.createVerticalStrut(14));
+        textos.add(Box.createVerticalStrut(6));
+        textos.add(descricaoDesafio);
 
         JButton novoMapa = criarBotaoSecundario("Novo mapa", this::gerarNovoMapa);
         JButton dica = criarBotaoSecundario("Dica", this::mostrarDica);
         botoesEdicao.add(novoMapa);
         botoesEdicao.add(dica);
 
-        JPanel informacoes = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 6));
+        JPanel informacoes = new JPanel();
+        informacoes.setLayout(new BoxLayout(informacoes, BoxLayout.Y_AXIS));
         informacoes.setOpaque(false);
-        informacoes.add(statusRobo);
-        informacoes.add(novoMapa);
-        informacoes.add(dica);
-        informacoes.add(seletorMissao);
+
+        JPanel linhaStatus = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 2));
+        linhaStatus.setOpaque(false);
+        linhaStatus.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        linhaStatus.add(statusRobo);
+
+        JPanel linhaControles = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
+        linhaControles.setOpaque(false);
+        linhaControles.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        linhaControles.add(novoMapa);
+        linhaControles.add(dica);
+        linhaControles.add(botaoSom);
+        linhaControles.add(seletorMissao);
+        linhaControles.add(seletorDesafio);
+
+        informacoes.add(linhaStatus);
+        informacoes.add(linhaControles);
 
         cabecalho.add(textos, BorderLayout.CENTER);
         cabecalho.add(informacoes, BorderLayout.EAST);
@@ -213,6 +239,15 @@ public class JogoRoboFrame extends JFrame {
         return combo;
     }
 
+    private JComboBox<Desafio> criarSeletorDesafio() {
+        JComboBox<Desafio> combo = new JComboBox<>(Desafio.values());
+        combo.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
+        combo.setBackground(Color.WHITE);
+        combo.setPreferredSize(new Dimension(150, 38));
+        combo.addActionListener(this::trocarDesafio);
+        return combo;
+    }
+
     private JTextArea criarAreaCodigo() {
         JTextArea area = new JTextArea();
         area.setEditable(false);
@@ -284,6 +319,23 @@ public class JogoRoboFrame extends JFrame {
         }
     }
 
+    private void trocarDesafio(ActionEvent evento) {
+        if (executando) {
+            return;
+        }
+
+        Desafio selecionado = (Desafio) seletorDesafio.getSelectedItem();
+        if (selecionado != null) {
+            desafioAtual = selecionado;
+            limparCodigo(null);
+        }
+    }
+
+    private void alternarSom(ActionEvent evento) {
+        boolean ligado = som.alternar();
+        botaoSom.setText(ligado ? "Som: ligado" : "Som: desligado");
+    }
+
     private void gerarNovoMapa(ActionEvent evento) {
         if (executando) {
             return;
@@ -327,6 +379,7 @@ public class JogoRoboFrame extends JFrame {
 
         comandosEscolhidos.clear();
         robo = missaoAtual.criarRobo();
+        passouNoBonusAntesDaColeta = false;
         painelMapa.resetar(missaoAtual, robo);
         atualizarTela();
     }
@@ -337,12 +390,19 @@ public class JogoRoboFrame extends JFrame {
             return;
         }
 
+        if (ehCodigoSecreto()) {
+            executarCodigoSecreto();
+            return;
+        }
+
         executando = true;
         alterarEdicao(false);
         robo = missaoAtual.criarRobo();
+        passouNoBonusAntesDaColeta = false;
         painelMapa.resetar(missaoAtual, robo);
         indiceExecucao = 0;
         atualizarStatus("Preparando a execução...");
+        painelMapa.mostrarFala("Vamos!", 800);
 
         Timer esperaInicial = new Timer(250, e -> {
             ((Timer) e.getSource()).stop();
@@ -373,15 +433,16 @@ public class JogoRoboFrame extends JFrame {
         Posicao destino = robo.calcularProximaPosicao(comando.getDirecao());
 
         if (missaoAtual.foraDoMapa(destino)) {
-            interromperComErro("O robô tentou sair do mapa.");
+            reagirAColisao("O robô tentou sair do mapa.", comando.getDirecao());
             return;
         }
         if (missaoAtual.temParede(destino)) {
-            interromperComErro("O robô encontrou uma parede. Revise a ordem das fitas.");
+            reagirAColisao("O robô encontrou uma parede. Revise a ordem das fitas.", comando.getDirecao());
             return;
         }
 
         robo.mover(comando.getDirecao());
+        som.tocarPasso(comando.getDirecao());
         painelMapa.atualizarModelo(robo);
         painelMapa.animarMovimento(origem, destino, comando.getDirecao(), () -> {
             indiceExecucao++;
@@ -392,16 +453,21 @@ public class JogoRoboFrame extends JFrame {
 
     private void executarColeta() {
         if (robo.pegouItem()) {
+            som.tocarErro();
             interromperComErro("O item já foi coletado. Remova o comando repetido.");
             return;
         }
 
         if (!robo.getPosicao().mesmaPosicao(missaoAtual.getObjetivo())) {
+            som.tocarErro();
+            painelMapa.mostrarFala("Cadê a energia?", 1100);
             interromperComErro("pegarItem() foi chamado longe da energia.");
             return;
         }
 
+        passouNoBonusAntesDaColeta = painelMapa.passouPor(missaoAtual.getCasaBonus());
         robo.pegarItem();
+        som.tocarColeta();
         painelMapa.atualizarModelo(robo);
         painelMapa.animarColeta(() -> {
             indiceExecucao++;
@@ -417,19 +483,27 @@ public class JogoRoboFrame extends JFrame {
         JOptionPane.showMessageDialog(this, mensagem, "A lógica precisa de ajuste", JOptionPane.WARNING_MESSAGE);
     }
 
+    private void reagirAColisao(String mensagem, Direcao direcao) {
+        som.tocarErro();
+        atualizarStatus("Colisão detectada");
+        painelMapa.animarColisao(direcao, () -> interromperComErro(mensagem));
+    }
+
     private void finalizarExecucao() {
-        executando = false;
-        alterarEdicao(true);
         boolean chegou = robo.getPosicao().mesmaPosicao(missaoAtual.getObjetivo());
         boolean concluiu = chegou && robo.pegouItem();
-        atualizarStatus(concluiu ? "Missão concluída" : "Código finalizado");
 
         if (concluiu) {
-            JOptionPane.showMessageDialog(this,
-                    "Missão concluída! Seu caminho funcionou.",
-                    "Muito bem",
-                    JOptionPane.INFORMATION_MESSAGE);
+            boolean cumpriuDesafio = desafioAtual.foiCumprido(
+                    missaoAtual, robo, comandosEscolhidos.size(), passouNoBonusAntesDaColeta);
+            int estrelas = calcularEstrelas(cumpriuDesafio);
+            atualizarStatus("Missão concluída - " + estrelas + "/3 estrelas");
+            som.tocarVitoria();
+            painelMapa.animarVitoria(() -> concluirVitoria(estrelas, cumpriuDesafio));
         } else {
+            executando = false;
+            alterarEdicao(true);
+            atualizarStatus("Código finalizado");
             JOptionPane.showMessageDialog(this,
                     "O código terminou, mas ainda falta chegar na energia e usar pegarItem().",
                     "Continue tentando",
@@ -437,16 +511,72 @@ public class JogoRoboFrame extends JFrame {
         }
     }
 
+    private int calcularEstrelas(boolean cumpriuDesafio) {
+        if (!cumpriuDesafio) {
+            return 1;
+        }
+        if (comandosEscolhidos.size() <= desafioAtual.getMetaComandos(missaoAtual)) {
+            return 3;
+        }
+        return 2;
+    }
+
+    private void concluirVitoria(int estrelas, boolean cumpriuDesafio) {
+        executando = false;
+        alterarEdicao(true);
+        String resultadoDesafio = cumpriuDesafio
+                ? "Desafio extra cumprido!"
+                : "A missão funcionou. Agora tente também o desafio extra.";
+        JOptionPane.showMessageDialog(this,
+                "Missão concluída!\n"
+                        + resultadoDesafio + "\n"
+                        + "Resultado: " + estrelas + " de 3 estrelas.",
+                "Muito bem",
+                JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private boolean ehCodigoSecreto() {
+        return comandosEscolhidos.equals(List.of(
+                Comando.ESQUERDA,
+                Comando.DIREITA,
+                Comando.ESQUERDA,
+                Comando.DIREITA));
+    }
+
+    private void executarCodigoSecreto() {
+        executando = true;
+        alterarEdicao(false);
+        robo = missaoAtual.criarRobo();
+        passouNoBonusAntesDaColeta = false;
+        painelMapa.resetar(missaoAtual, robo);
+        painelMapa.setCasaBonus(desafioAtual == Desafio.CASA_BONUS ? missaoAtual.getCasaBonus() : null);
+        atualizarStatus("Sequência secreta encontrada");
+        som.tocarDanca();
+        painelMapa.animarDanca(() -> {
+            executando = false;
+            alterarEdicao(true);
+            atualizarStatus("Robô pronto");
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Você descobriu a dança secreta do robô!",
+                    "Código secreto",
+                    JOptionPane.INFORMATION_MESSAGE);
+        });
+    }
+
     private void alterarEdicao(boolean habilitada) {
         for (JButton botao : botoesEdicao) {
             botao.setEnabled(habilitada);
         }
         seletorMissao.setEnabled(habilitada);
+        seletorDesafio.setEnabled(habilitada);
     }
 
     private void atualizarTela() {
         tituloMissao.setText(missaoAtual.getNome().toUpperCase());
         descricaoMissao.setText(missaoAtual.getDescricao());
+        descricaoDesafio.setText("DESAFIO: " + desafioAtual.getDescricao(missaoAtual));
+        painelMapa.setCasaBonus(desafioAtual == Desafio.CASA_BONUS ? missaoAtual.getCasaBonus() : null);
         atualizarStatus(null);
         atualizarCodigo();
     }

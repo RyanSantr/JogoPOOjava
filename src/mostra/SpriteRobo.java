@@ -24,6 +24,14 @@ public final class SpriteRobo {
     }
 
     public static BufferedImage criar(Direcao direcao, int quadro, boolean andando) {
+        return criar(direcao, quadro, andando, ReacaoRobo.NORMAL);
+    }
+
+    public static BufferedImage criar(
+            Direcao direcao,
+            int quadro,
+            boolean andando,
+            ReacaoRobo reacao) {
         BufferedImage sprite = new BufferedImage(TAMANHO, TAMANHO, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = sprite.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
@@ -35,11 +43,11 @@ public final class SpriteRobo {
         AffineTransform transformacaoOriginal = g.getTransform();
         g.translate(0, deslocamentoY);
         if (direcao == Direcao.NORTE) {
-            desenharCostas(g, fase, andando);
+            desenharCostas(g, fase, andando, reacao);
         } else if (direcao == Direcao.SUL) {
-            desenharFrente(g, fase, andando);
+            desenharFrente(g, fase, andando, reacao);
         } else {
-            desenharLado(g, fase, andando, direcao == Direcao.LESTE);
+            desenharLado(g, fase, andando, direcao == Direcao.LESTE, reacao);
         }
         g.setTransform(transformacaoOriginal);
         g.dispose();
@@ -77,8 +85,12 @@ public final class SpriteRobo {
         g.fillRect(16 - largura / 2, 29, largura, 2);
     }
 
-    private static void desenharFrente(Graphics2D g, int fase, boolean andando) {
-        desenharAntena(g, fase);
+    private static void desenharFrente(
+            Graphics2D g,
+            int fase,
+            boolean andando,
+            ReacaoRobo reacao) {
+        desenharAntena(g, fase, reacao);
 
         g.setColor(CONTORNO);
         g.fillRect(5, 8, 3, 8);
@@ -91,20 +103,25 @@ public final class SpriteRobo {
 
         g.setColor(AZUL_ESCURO);
         g.fillRect(9, 8, 14, 6);
-        g.setColor(AZUL_CLARO);
-        g.fillRect(11, 10, 3, 3);
-        g.fillRect(18, 10, 3, 3);
+        int olhar = reacao == ReacaoRobo.DANCANDO ? (fase % 2 == 0 ? -1 : 1) : 0;
+        g.setColor(corDosOlhos(reacao));
+        g.fillRect(11 + olhar, 10, 3, 3);
+        g.fillRect(18 + olhar, 10, 3, 3);
         g.setColor(Color.WHITE);
-        g.fillRect(12, 10, 1, 1);
-        g.fillRect(19, 10, 1, 1);
+        g.fillRect(12 + olhar, 10, 1, 1);
+        g.fillRect(19 + olhar, 10, 1, 1);
 
         desenharCorpoFrontal(g);
         desenharBracos(g, fase, andando);
         desenharPernasFrontais(g, fase, andando);
     }
 
-    private static void desenharCostas(Graphics2D g, int fase, boolean andando) {
-        desenharAntena(g, fase);
+    private static void desenharCostas(
+            Graphics2D g,
+            int fase,
+            boolean andando,
+            ReacaoRobo reacao) {
+        desenharAntena(g, fase, reacao);
 
         g.setColor(CONTORNO);
         g.fillRect(5, 8, 3, 8);
@@ -142,14 +159,19 @@ public final class SpriteRobo {
         desenharPernasFrontais(g, fase, andando);
     }
 
-    private static void desenharLado(Graphics2D g, int fase, boolean andando, boolean direita) {
+    private static void desenharLado(
+            Graphics2D g,
+            int fase,
+            boolean andando,
+            boolean direita,
+            ReacaoRobo reacao) {
         AffineTransform original = g.getTransform();
         if (!direita) {
             g.translate(TAMANHO, 0);
             g.scale(-1, 1);
         }
 
-        desenharAntena(g, fase);
+        desenharAntena(g, fase, reacao);
         g.setColor(CONTORNO);
         g.fillRect(8, 6, 16, 12);
         g.fillRect(23, 9, 3, 7);
@@ -159,7 +181,7 @@ public final class SpriteRobo {
         g.fillRect(9, 15, 14, 2);
         g.setColor(AZUL_ESCURO);
         g.fillRect(17, 8, 6, 6);
-        g.setColor(AZUL_CLARO);
+        g.setColor(corDosOlhos(reacao));
         g.fillRect(20, 10, 2, 3);
         g.setColor(Color.WHITE);
         g.fillRect(21, 10, 1, 1);
@@ -194,14 +216,32 @@ public final class SpriteRobo {
         g.setTransform(original);
     }
 
-    private static void desenharAntena(Graphics2D g, int fase) {
+    private static void desenharAntena(Graphics2D g, int fase, ReacaoRobo reacao) {
         g.setColor(CONTORNO);
         g.fillRect(15, 2, 2, 4);
         g.fillRect(13, 0, 6, 3);
-        g.setColor(fase % 2 == 0 ? AZUL : AZUL_CLARO);
+        g.setColor(corDoLed(reacao, fase));
         g.fillRect(14, 0, 4, 2);
         g.setColor(Color.WHITE);
         g.fillRect(15, 0, 1, 1);
+    }
+
+    private static Color corDoLed(ReacaoRobo reacao, int fase) {
+        return switch (reacao) {
+            case ERRO -> fase % 2 == 0 ? new Color(230, 52, 70) : new Color(255, 125, 125);
+            case FELIZ, DANCANDO -> fase % 2 == 0
+                    ? new Color(34, 197, 94)
+                    : new Color(134, 239, 172);
+            case NORMAL -> fase % 2 == 0 ? AZUL : AZUL_CLARO;
+        };
+    }
+
+    private static Color corDosOlhos(ReacaoRobo reacao) {
+        return switch (reacao) {
+            case ERRO -> new Color(255, 95, 105);
+            case FELIZ, DANCANDO -> new Color(86, 220, 145);
+            case NORMAL -> AZUL_CLARO;
+        };
     }
 
     private static void desenharCorpoFrontal(Graphics2D g) {
