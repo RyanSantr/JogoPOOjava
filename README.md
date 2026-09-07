@@ -145,8 +145,3 @@ No Windows:
 Os testes verificam movimentos, consumo de bateria, coleta única, desafios e
 centenas de mapas aleatórios com rotas normal e bônus.
 
-## Apresentação
-
-A apresentação curta usada na mostra está em
-[Apresentacao-POO-com-Robo.pptx](Apresentacao-POO-com-Robo.pptx). Os GIFs são
-reproduzidos no modo de apresentação do PowerPoint.
