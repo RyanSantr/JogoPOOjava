@@ -1,4 +1,4 @@
-# Missão Robô: POO com Java
+# Missão Quiz Labirinto: POO com Java
 
 Jogo feito com Java Swing para apresentar Programação Orientada a
 Objetos de forma visual e interativa.
