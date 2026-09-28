@@ -134,14 +134,3 @@ src/mostra/
 └── SpriteRobo.java      gera os sprites em pixel art
 ```
 
-## Testes
-
-No Windows:
-
-```powershell
-.\run-tests.bat
-```
-
-Os testes verificam movimentos, consumo de bateria, coleta única, desafios e
-centenas de mapas aleatórios com rotas normal e bônus.
-
